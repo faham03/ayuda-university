@@ -1,20 +1,43 @@
 from django.db import models
-from django.apps import apps
-import datetime
 
+
+# Modèles de configuration admin
+class Filiere(models.Model):
+    nom = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nom
+
+
+class Cours(models.Model):
+    nom = models.CharField(max_length=200)
+    filiere = models.ForeignKey(Filiere, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.nom} ({self.filiere.nom})"
+
+
+class Salle(models.Model):
+    nom = models.CharField(max_length=100, unique=True)
+    capacite = models.IntegerField(default=30)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nom
+
+
+class Annee(models.Model):
+    nom = models.CharField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.nom
+
+
+# Modèle principal Schedule - VERSION FINALE SANS ANCIENS CHAMPS
 class Schedule(models.Model):
-    FILIERE_CHOICES = (
-        ('informatique', 'Informatique'),
-        ('droit', 'Droit'),
-        ('gestion', 'Gestion'),
-    )
-
-    YEAR_CHOICES = (
-        ('L1', 'Licence 1'),
-        ('L2', 'Licence 2'),
-        ('L3', 'Licence 3'),
-    )
-
     DAY_CHOICES = (
         ('lundi', 'Lundi'),
         ('mardi', 'Mardi'),
@@ -24,33 +47,23 @@ class Schedule(models.Model):
         ('samedi', 'Samedi'),
     )
 
-    SALLE_CHOICES = (
-        ('Salle A', 'Salle A'),
-        ('Salle B', 'Salle B'),
-        ('Salle C', 'Salle C'),
-        ('Salle D', 'Salle D'),
-    )
+    # Relations flexibles - VERSION FINALE
+    filiere = models.ForeignKey(Filiere, on_delete=models.CASCADE)
+    annee = models.ForeignKey(Annee, on_delete=models.CASCADE)
+    cours = models.ForeignKey(Cours, on_delete=models.CASCADE)
+    salle = models.ForeignKey(Salle, on_delete=models.CASCADE)
 
-    filiere = models.CharField(max_length=20, choices=FILIERE_CHOICES)
-    year = models.CharField(max_length=5, choices=YEAR_CHOICES)
+    # Informations horaires
     day = models.CharField(max_length=10, choices=DAY_CHOICES)
-    course_name = models.CharField(max_length=100)
-    professeur = models.CharField(max_length=100, null=True, blank=True)
-    salle = models.CharField(max_length=20, choices=SALLE_CHOICES, null=True, blank=True)
     start_time = models.TimeField()
     end_time = models.TimeField()
+    professeur = models.CharField(max_length=100)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['day', 'start_time']
 
     def __str__(self):
-        return f"{self.filiere} {self.year} - {self.day}: {self.course_name} ({self.salle})"
-
-
-def check_conflicts(course):
-    """Vérifie si un cours entre en conflit avec un événement académique"""
-    Event = apps.get_model('events', 'Event')  # Récupération dynamique du modèle
-    conflicts = Event.objects.filter(
-        location=course.salle,
-        start_date__lt=datetime.datetime.combine(datetime.date.today(), course.end_time),
-        end_date__gt=datetime.datetime.combine(datetime.date.today(), course.start_time),
-        event_type="ACADEMIC"
-    )
-    return conflicts.exists()
+        return f"{self.cours.nom} - {self.filiere.nom} {self.annee.nom} - {self.day} {self.start_time}"

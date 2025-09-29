@@ -1,15 +1,24 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import ScheduleListView, ScheduleViewSet
+from .views import (
+    ScheduleListView, ScheduleViewSet,
+    FiliereViewSet, CoursViewSet, SalleViewSet, AnneeViewSet
+)
 
-# Router pour la gestion complète (admin uniquement)
 router = DefaultRouter()
+# Configuration admin
+router.register(r'filieres', FiliereViewSet, basename='filiere')
+router.register(r'cours', CoursViewSet, basename='cours')
+router.register(r'salles', SalleViewSet, basename='salle')
+router.register(r'annees', AnneeViewSet, basename='annee')
+
+# Schedule admin
 router.register(r'schedule-admin', ScheduleViewSet, basename='schedule-admin')
 
 urlpatterns = [
-    # Endpoint par défaut pour les étudiants (consultation avec filtres)
+    # Consultation étudiants
     path('schedule/', ScheduleListView.as_view(), name='schedule-list'),
 
-    # Routes admin (CRUD complet)
+    # Configuration + CRUD admin
     path('', include(router.urls)),
 ]
